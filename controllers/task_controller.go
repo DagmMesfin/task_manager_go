@@ -53,12 +53,13 @@ func PutTask(c *gin.Context) {
 		return
 	}
 
-	if erro := data.SetTask(id, updatedTask); erro == nil {
-		c.JSON(http.StatusOK, gin.H{"message": "task updated"})
-		return
-	}
+	erro := data.SetTask(id, updatedTask)
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	if erro == nil {
+		c.JSON(http.StatusOK, gin.H{"message": "task updated"})
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	}
 }
 
 func DeleteTask(c *gin.Context) {
