@@ -10,7 +10,7 @@ import (
 
 func GetTasks(c *gin.Context) {
 	tasks := data.GetAllTasks()
-	c.JSON(http.StatusOK, gin.H{"tasks": tasks})
+	c.IndentedJSON(http.StatusOK, gin.H{"tasks": tasks})
 }
 
 func GetTasksById(c *gin.Context) {
@@ -19,11 +19,11 @@ func GetTasksById(c *gin.Context) {
 	task, err := data.GetTask(id)
 
 	if err == nil {
-		c.JSON(http.StatusOK, task)
+		c.IndentedJSON(http.StatusOK, task)
 		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
 }
 
 func PostTask(c *gin.Context) {
@@ -32,18 +32,18 @@ func PostTask(c *gin.Context) {
 	err := c.ShouldBindJSON(&task)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if exists := data.FindTask(task.ID); exists != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": exists.Error()})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": exists.Error()})
 		return
 	}
 
 	data.AddTask(task)
 
-	c.JSON(http.StatusCreated, gin.H{"message": "task created"})
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "task created"})
 }
 
 func PutTask(c *gin.Context) {
@@ -54,16 +54,16 @@ func PutTask(c *gin.Context) {
 	err := c.ShouldBindJSON(&updatedTask)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	erro := data.SetTask(id, updatedTask)
 
 	if erro == nil {
-		c.JSON(http.StatusOK, gin.H{"message": "task updated"})
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "task updated"})
 	} else {
-		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
 	}
 }
 
@@ -71,9 +71,9 @@ func DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 
 	if erro := data.DeleteTask(id); erro == nil {
-		c.JSON(http.StatusOK, gin.H{"message": "task deleted"})
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "task deleted"})
 		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 }
