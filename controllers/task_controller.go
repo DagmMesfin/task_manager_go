@@ -36,6 +36,11 @@ func PostTask(c *gin.Context) {
 		return
 	}
 
+	if exists := data.FindTask(task.ID); exists != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": exists.Error()})
+		return
+	}
+
 	data.AddTask(task)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "task created"})

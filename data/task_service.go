@@ -25,6 +25,16 @@ func GetTask(id string) (models.Task, error) {
 	return *new(models.Task), errors.New("not found")
 }
 
+func FindTask(id string) error {
+	for _, task := range tasks {
+		if task.ID == id {
+			return errors.New("task already exists")
+		}
+	}
+	return nil
+
+}
+
 func AddTask(task models.Task) {
 	tasks = append(tasks, task)
 }
