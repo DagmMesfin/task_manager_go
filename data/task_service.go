@@ -1,70 +1,108 @@
 package data
 
 import (
+	"context"
 	"errors"
 	"task-manager/models"
-	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type TaskManager struct {
-	Tasks  []models.Task
+	client *mongo.Client
 	NextID int
 }
 
-func NewTaskManager() *TaskManager {
+func NewTaskManager(mongoClient *mongo.Client) *TaskManager {
 	return &TaskManager{
-		Tasks: []models.Task{
-			{ID: "1", Title: "Task 1", Description: "First task", DueDate: time.Now(), Status: "Pending"},
-			{ID: "2", Title: "Task 2", Description: "Second task", DueDate: time.Now().AddDate(0, 0, 1), Status: "In Progress"},
-			{ID: "3", Title: "Task 3", Description: "Third task", DueDate: time.Now().AddDate(0, 0, 2), Status: "Completed"},
-		},
+		client: mongoClient,
 	}
 
 }
 
-func (taskmgr *TaskManager) GetAllTasks() []models.Task {
-	return taskmgr.Tasks
+func (taskmgr *TaskManager) GetAllTasks() ([]models.Task, error) {
+	var tasks []models.Task
+
+	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	cursor, err := collection.Find(context.TODO(), bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
 func (taskmgr *TaskManager) GetTask(id string) (models.Task, error) {
-	for _, task := range taskmgr.Tasks {
-		if task.ID == id {
-			return task, nil
+	tasks, err := taskmgr.GetAllTasks()
+
+	if err == nil {
+		for _, task := range tasks {
+			if task.ID == id {
+				return task, nil
+			}
 		}
 	}
+
 	return *new(models.Task), errors.New("not found")
 }
 
 func (taskmgr *TaskManager) FindTask(id string) error {
-	for _, task := range taskmgr.Tasks {
-		if task.ID == id {
-			return errors.New("task already exists")
+	tasks, err := taskmgr.GetAllTasks()
+	if err == nil {
+		for _, task := range tasks {
+			if task.ID == id {
+				return errors.New("task already exists")
+			}
 		}
 	}
 	return nil
 
 }
 
-func (taskmgr *TaskManager) AddTask(task models.Task) {
-	taskmgr.Tasks = append(taskmgr.Tasks, task)
+func (taskmgr *TaskManager) AddTask(task models.Task) error {
+	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	_, err := collection.InsertOne(context.TODO(), task)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task) error {
-	for i, task := range taskmgr.Tasks {
-		if task.ID == id {
-			taskmgr.Tasks[i] = updatedTask
-			return nil
-		}
+	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	filter := bson.M{"id": id}
+	update := bson.M{
+		"$set": bson.M{
+			"title":       updatedTask.Title,
+			"description": updatedTask.Description,
+			"status":      updatedTask.Status,
+		},
 	}
-	return errors.New("task not found")
+
+	result, err := collection.UpdateOne(context.TODO(), filter, update)
+
+	if err != nil || result.ModifiedCount == 0 {
+		return errors.New("task not found")
+	}
+
+	return nil
 }
 
 func (taskmgr *TaskManager) DeleteTask(id string) error {
-	for i, task := range taskmgr.Tasks {
-		if task.ID == id {
-			taskmgr.Tasks = append(taskmgr.Tasks[:i], taskmgr.Tasks[i+1:]...)
-			return nil
-		}
+	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	filter := bson.M{"id": id}
+
+	result, err := collection.DeleteOne(context.TODO(), filter)
+
+	if err != nil || result.DeletedCount == 0 {
+		return errors.New("task not found")
 	}
-	return errors.New("task not found")
+
+	return nil
 }

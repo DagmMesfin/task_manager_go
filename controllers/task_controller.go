@@ -20,7 +20,7 @@ func NewTaskController(taskmgr data.TaskManager) *TaskController {
 }
 
 func (controller *TaskController) GetTasks(c *gin.Context) {
-	tasks := controller.service.GetAllTasks()
+	tasks, _ := controller.service.GetAllTasks()
 	c.IndentedJSON(http.StatusOK, gin.H{"tasks": tasks})
 }
 
