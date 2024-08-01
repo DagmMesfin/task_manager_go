@@ -6,18 +6,28 @@ import (
 	"time"
 )
 
-var tasks = []models.Task{
-	{ID: "1", Title: "Task 1", Description: "First task", DueDate: time.Now(), Status: "Pending"},
-	{ID: "2", Title: "Task 2", Description: "Second task", DueDate: time.Now().AddDate(0, 0, 1), Status: "In Progress"},
-	{ID: "3", Title: "Task 3", Description: "Third task", DueDate: time.Now().AddDate(0, 0, 2), Status: "Completed"},
+type TaskManager struct {
+	Tasks  []models.Task
+	NextID int
 }
 
-func GetAllTasks() []models.Task {
-	return tasks
+func NewTaskManager() *TaskManager {
+	return &TaskManager{
+		Tasks: []models.Task{
+			{ID: "1", Title: "Task 1", Description: "First task", DueDate: time.Now(), Status: "Pending"},
+			{ID: "2", Title: "Task 2", Description: "Second task", DueDate: time.Now().AddDate(0, 0, 1), Status: "In Progress"},
+			{ID: "3", Title: "Task 3", Description: "Third task", DueDate: time.Now().AddDate(0, 0, 2), Status: "Completed"},
+		},
+	}
+
 }
 
-func GetTask(id string) (models.Task, error) {
-	for _, task := range tasks {
+func (taskmgr *TaskManager) GetAllTasks() []models.Task {
+	return taskmgr.Tasks
+}
+
+func (taskmgr *TaskManager) GetTask(id string) (models.Task, error) {
+	for _, task := range taskmgr.Tasks {
 		if task.ID == id {
 			return task, nil
 		}
@@ -25,8 +35,8 @@ func GetTask(id string) (models.Task, error) {
 	return *new(models.Task), errors.New("not found")
 }
 
-func FindTask(id string) error {
-	for _, task := range tasks {
+func (taskmgr *TaskManager) FindTask(id string) error {
+	for _, task := range taskmgr.Tasks {
 		if task.ID == id {
 			return errors.New("task already exists")
 		}
@@ -35,24 +45,24 @@ func FindTask(id string) error {
 
 }
 
-func AddTask(task models.Task) {
-	tasks = append(tasks, task)
+func (taskmgr *TaskManager) AddTask(task models.Task) {
+	taskmgr.Tasks = append(taskmgr.Tasks, task)
 }
 
-func SetTask(id string, updatedTask models.Task) error {
-	for i, task := range tasks {
+func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task) error {
+	for i, task := range taskmgr.Tasks {
 		if task.ID == id {
-			tasks[i] = updatedTask
+			taskmgr.Tasks[i] = updatedTask
 			return nil
 		}
 	}
 	return errors.New("task not found")
 }
 
-func DeleteTask(id string) error {
-	for i, task := range tasks {
+func (taskmgr *TaskManager) DeleteTask(id string) error {
+	for i, task := range taskmgr.Tasks {
 		if task.ID == id {
-			tasks = append(tasks[:i], tasks[i+1:]...)
+			taskmgr.Tasks = append(taskmgr.Tasks[:i], taskmgr.Tasks[i+1:]...)
 			return nil
 		}
 	}

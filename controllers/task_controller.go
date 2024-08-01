@@ -8,15 +8,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetTasks(c *gin.Context) {
-	tasks := data.GetAllTasks()
+type TaskController struct {
+	service data.TaskManager
+}
+
+func NewTaskController(taskmgr data.TaskManager) *TaskController {
+	return &TaskController{
+		service: taskmgr,
+	}
+
+}
+
+func (controller *TaskController) GetTasks(c *gin.Context) {
+	tasks := controller.service.GetAllTasks()
 	c.IndentedJSON(http.StatusOK, gin.H{"tasks": tasks})
 }
 
-func GetTasksById(c *gin.Context) {
+func (controller *TaskController) GetTasksById(c *gin.Context) {
 	id := c.Param("id")
 
-	task, err := data.GetTask(id)
+	task, err := controller.service.GetTask(id)
 
 	if err == nil {
 		c.IndentedJSON(http.StatusOK, task)
@@ -26,7 +37,7 @@ func GetTasksById(c *gin.Context) {
 	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
 }
 
-func PostTask(c *gin.Context) {
+func (controller *TaskController) PostTask(c *gin.Context) {
 	var task models.Task
 
 	err := c.ShouldBindJSON(&task)
@@ -36,17 +47,17 @@ func PostTask(c *gin.Context) {
 		return
 	}
 
-	if exists := data.FindTask(task.ID); exists != nil {
+	if exists := controller.service.FindTask(task.ID); exists != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": exists.Error()})
 		return
 	}
 
-	data.AddTask(task)
+	controller.service.AddTask(task)
 
 	c.IndentedJSON(http.StatusCreated, gin.H{"message": "task created"})
 }
 
-func PutTask(c *gin.Context) {
+func (controller *TaskController) PutTask(c *gin.Context) {
 	id := c.Param("id")
 
 	var updatedTask models.Task
@@ -58,7 +69,7 @@ func PutTask(c *gin.Context) {
 		return
 	}
 
-	erro := data.SetTask(id, updatedTask)
+	erro := controller.service.SetTask(id, updatedTask)
 
 	if erro == nil {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "task updated"})
@@ -67,10 +78,10 @@ func PutTask(c *gin.Context) {
 	}
 }
 
-func DeleteTask(c *gin.Context) {
+func (controller *TaskController) DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 
-	if erro := data.DeleteTask(id); erro == nil {
+	if erro := controller.service.DeleteTask(id); erro == nil {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "task deleted"})
 		return
 	}

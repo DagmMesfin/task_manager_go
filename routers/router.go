@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(gino *gin.Engine) {
-	gino.GET("/tasks", controllers.GetTasks)
-	gino.GET("/tasks/:id", controllers.GetTasksById)
-	gino.POST("/tasks", controllers.PostTask)
-	gino.PUT("/tasks/:id", controllers.PutTask)
-	gino.DELETE("/tasks/:id", controllers.DeleteTask)
+func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController) {
+	gino.GET("/tasks", taskmgr.GetTasks)
+	gino.GET("/tasks/:id", taskmgr.GetTasksById)
+	gino.POST("/tasks", taskmgr.PostTask)
+	gino.PUT("/tasks/:id", taskmgr.PutTask)
+	gino.DELETE("/tasks/:id", taskmgr.DeleteTask)
 }
