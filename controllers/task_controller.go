@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"task-manager/data"
 	"task-manager/models"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskController struct {
@@ -21,13 +23,20 @@ func NewTaskController(taskmgr data.TaskManager) *TaskController {
 
 func (controller *TaskController) GetTasks(c *gin.Context) {
 	tasks, _ := controller.service.GetAllTasks()
+
+	log.Println(tasks)
+
 	c.IndentedJSON(http.StatusOK, gin.H{"tasks": tasks})
 }
 
 func (controller *TaskController) GetTasksById(c *gin.Context) {
 	id := c.Param("id")
 
-	task, err := controller.service.GetTask(id)
+	ido, _ := primitive.ObjectIDFromHex(id)
+
+	task, err := controller.service.GetTask(ido)
+
+	log.Println(task)
 
 	if err == nil {
 		c.IndentedJSON(http.StatusOK, task)
@@ -47,8 +56,10 @@ func (controller *TaskController) PostTask(c *gin.Context) {
 		return
 	}
 
-	if exists := controller.service.FindTask(task.ID); exists != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": exists.Error()})
+	task.ID = primitive.NewObjectID()
+
+	if _, exists := controller.service.GetTask(task.ID); exists == nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Task Already Exists"})
 		return
 	}
 
@@ -60,6 +71,8 @@ func (controller *TaskController) PostTask(c *gin.Context) {
 func (controller *TaskController) PutTask(c *gin.Context) {
 	id := c.Param("id")
 
+	ido, _ := primitive.ObjectIDFromHex(id)
+
 	var updatedTask models.Task
 
 	err := c.ShouldBindJSON(&updatedTask)
@@ -69,7 +82,11 @@ func (controller *TaskController) PutTask(c *gin.Context) {
 		return
 	}
 
-	erro := controller.service.SetTask(id, updatedTask)
+	log.Println(updatedTask)
+
+	erro := controller.service.SetTask(ido, updatedTask)
+
+	log.Println(erro)
 
 	if erro == nil {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "task updated"})
@@ -81,7 +98,9 @@ func (controller *TaskController) PutTask(c *gin.Context) {
 func (controller *TaskController) DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 
-	if erro := controller.service.DeleteTask(id); erro == nil {
+	ido, _ := primitive.ObjectIDFromHex(id)
+
+	if erro := controller.service.DeleteTask(ido); erro == nil {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "task deleted"})
 		return
 	}

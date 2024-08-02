@@ -3,9 +3,11 @@ package data
 import (
 	"context"
 	"errors"
+	"log"
 	"task-manager/models"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -35,30 +37,11 @@ func (taskmgr *TaskManager) GetAllTasks() ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (taskmgr *TaskManager) GetTask(id string) (models.Task, error) {
-	tasks, err := taskmgr.GetAllTasks()
-
-	if err == nil {
-		for _, task := range tasks {
-			if task.ID == id {
-				return task, nil
-			}
-		}
-	}
-
-	return *new(models.Task), errors.New("not found")
-}
-
-func (taskmgr *TaskManager) FindTask(id string) error {
-	tasks, err := taskmgr.GetAllTasks()
-	if err == nil {
-		for _, task := range tasks {
-			if task.ID == id {
-				return errors.New("task already exists")
-			}
-		}
-	}
-	return nil
+func (taskmgr *TaskManager) GetTask(id primitive.ObjectID) (models.Task, error) {
+	var task models.Task
+	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	err := collection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&task)
+	return task, err
 
 }
 
@@ -74,9 +57,9 @@ func (taskmgr *TaskManager) AddTask(task models.Task) error {
 
 }
 
-func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task) error {
+func (taskmgr *TaskManager) SetTask(id primitive.ObjectID, updatedTask models.Task) error {
 	collection := taskmgr.client.Database("task-manager").Collection("tasks")
-	filter := bson.M{"id": id}
+	filter := bson.M{"_id": id}
 	update := bson.M{
 		"$set": bson.M{
 			"title":       updatedTask.Title,
@@ -87,16 +70,18 @@ func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task) error {
 
 	result, err := collection.UpdateOne(context.TODO(), filter, update)
 
-	if err != nil || result.ModifiedCount == 0 {
+	log.Println(result, err, updatedTask)
+
+	if err != nil || result.MatchedCount == 0 {
 		return errors.New("task not found")
 	}
 
 	return nil
 }
 
-func (taskmgr *TaskManager) DeleteTask(id string) error {
+func (taskmgr *TaskManager) DeleteTask(id primitive.ObjectID) error {
 	collection := taskmgr.client.Database("task-manager").Collection("tasks")
-	filter := bson.M{"id": id}
+	filter := bson.M{"_id": id}
 
 	result, err := collection.DeleteOne(context.TODO(), filter)
 
