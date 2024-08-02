@@ -7,7 +7,6 @@ import (
 	"task-manager/models"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskController struct {
@@ -32,9 +31,7 @@ func (controller *TaskController) GetTasks(c *gin.Context) {
 func (controller *TaskController) GetTasksById(c *gin.Context) {
 	id := c.Param("id")
 
-	ido, _ := primitive.ObjectIDFromHex(id)
-
-	task, err := controller.service.GetTask(ido)
+	task, err := controller.service.GetTask(id)
 
 	log.Println(task)
 
@@ -56,9 +53,7 @@ func (controller *TaskController) PostTask(c *gin.Context) {
 		return
 	}
 
-	task.ID = primitive.NewObjectID()
-
-	if _, exists := controller.service.GetTask(task.ID); exists == nil {
+	if _, exists := controller.service.GetTask(task.ID.String()); exists == nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Task Already Exists"})
 		return
 	}
@@ -71,8 +66,6 @@ func (controller *TaskController) PostTask(c *gin.Context) {
 func (controller *TaskController) PutTask(c *gin.Context) {
 	id := c.Param("id")
 
-	ido, _ := primitive.ObjectIDFromHex(id)
-
 	var updatedTask models.Task
 
 	err := c.ShouldBindJSON(&updatedTask)
@@ -84,7 +77,7 @@ func (controller *TaskController) PutTask(c *gin.Context) {
 
 	log.Println(updatedTask)
 
-	erro := controller.service.SetTask(ido, updatedTask)
+	erro := controller.service.SetTask(id, updatedTask)
 
 	log.Println(erro)
 
@@ -98,9 +91,7 @@ func (controller *TaskController) PutTask(c *gin.Context) {
 func (controller *TaskController) DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 
-	ido, _ := primitive.ObjectIDFromHex(id)
-
-	if erro := controller.service.DeleteTask(ido); erro == nil {
+	if erro := controller.service.DeleteTask(id); erro == nil {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "task deleted"})
 		return
 	}

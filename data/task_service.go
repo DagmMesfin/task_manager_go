@@ -13,7 +13,6 @@ import (
 
 type TaskManager struct {
 	client *mongo.Client
-	NextID int
 }
 
 func NewTaskManager(mongoClient *mongo.Client) *TaskManager {
@@ -37,10 +36,12 @@ func (taskmgr *TaskManager) GetAllTasks() ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (taskmgr *TaskManager) GetTask(id primitive.ObjectID) (models.Task, error) {
+func (taskmgr *TaskManager) GetTask(id string) (models.Task, error) {
+
 	var task models.Task
 	collection := taskmgr.client.Database("task-manager").Collection("tasks")
-	err := collection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&task)
+	ido, _ := primitive.ObjectIDFromHex(id)
+	err := collection.FindOne(context.TODO(), bson.M{"_id": ido}).Decode(&task)
 	return task, err
 
 }
@@ -57,9 +58,10 @@ func (taskmgr *TaskManager) AddTask(task models.Task) error {
 
 }
 
-func (taskmgr *TaskManager) SetTask(id primitive.ObjectID, updatedTask models.Task) error {
+func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task) error {
 	collection := taskmgr.client.Database("task-manager").Collection("tasks")
-	filter := bson.M{"_id": id}
+	ido, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": ido}
 	update := bson.M{
 		"$set": bson.M{
 			"title":       updatedTask.Title,
@@ -79,9 +81,10 @@ func (taskmgr *TaskManager) SetTask(id primitive.ObjectID, updatedTask models.Ta
 	return nil
 }
 
-func (taskmgr *TaskManager) DeleteTask(id primitive.ObjectID) error {
+func (taskmgr *TaskManager) DeleteTask(id string) error {
 	collection := taskmgr.client.Database("task-manager").Collection("tasks")
-	filter := bson.M{"_id": id}
+	ido, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": ido}
 
 	result, err := collection.DeleteOne(context.TODO(), filter)
 
