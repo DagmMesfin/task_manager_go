@@ -46,9 +46,12 @@ func main() {
 	tasks := data.NewTaskManager(client)
 	taskmgr := controllers.NewTaskController(*tasks)
 
+	userdata := data.NewUserManager(client)
+	usermgr := controllers.NewUserController(*userdata)
+
 	router := gin.Default()
 
-	routers.SetupRoutes(router, taskmgr)
+	routers.SetupRoutes(router, taskmgr, usermgr)
 
 	router.Run(":8080")
 }

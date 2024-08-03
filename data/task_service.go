@@ -48,6 +48,7 @@ func (taskmgr *TaskManager) GetTask(id string) (models.Task, error) {
 
 func (taskmgr *TaskManager) AddTask(task models.Task) error {
 	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	task.ID = primitive.NewObjectID()
 	_, err := collection.InsertOne(context.TODO(), task)
 
 	if err != nil {
