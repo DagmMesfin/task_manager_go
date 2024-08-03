@@ -1,9 +1,3 @@
-
-# Task Manager REST API
-
-## Overview
-This Task Manager REST API allows users to manage tasks, including creating, updating, retrieving, and deleting tasks. The API is designed to be used with various clients and provides a set of endpoints for task management.
-
 # Task Management REST API
 
 ## Overview
