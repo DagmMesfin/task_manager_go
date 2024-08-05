@@ -1,11 +1,30 @@
-
-# Task Manager REST API
+# Task Management REST API
 
 ## Overview
-This Task Manager REST API allows users to manage tasks, including creating, updating, retrieving, and deleting tasks. The API is designed to be used with various clients and provides a set of endpoints for task management.
+
+The Task Management REST API is a backend application built using the Go programming language and the Gin framework. This API enables users to manage tasks through basic CRUD (Create, Read, Update, Delete) operations. The API is designed to be simple, efficient, and scalable, providing a foundational backend service for task management applications.
+
+## Features
+
+- **Create a Task**: Add new tasks with details such as title, description, due date, and status.
+- **Read Tasks**: Retrieve a list of all tasks or specific task details by ID.
+- **Update a Task**: Modify existing task details.
+- **Delete a Task**: Remove tasks from the system.
+
+## Technologies Used
+
+- **Go**: A statically typed, compiled programming language known for its simplicity and performance.
+- **Gin Framework**: A lightweight and fast HTTP web framework for Go, ideal for building RESTful APIs.
+- **MongoDB**: A NoSQL database known for its flexibility and scalability, used for storing task data.
+
+## MongoDB Integration
+
+- **MongoDB Driver**: Utilizes the official MongoDB Go driver for database interactions.
+- **Task Collection**: Stores tasks in a MongoDB collection, ensuring efficient and scalable data management.
+- **Database Operations**: Implements CRUD operations using MongoDB to handle task data, providing robust data storage and retrieval capabilities.
 
 ## Base URL
-`https://api.example.com`
+`https://localhost:8080/`
 
 ## Endpoints
 
