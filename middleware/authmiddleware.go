@@ -3,14 +3,22 @@ package middleware
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+		SECRET_KEY := os.Getenv("JWT_SECRET")
 
 		// JWT validation logic
 		authHeader := c.GetHeader("Authorization")
@@ -36,7 +44,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			}
 
 			// Replace "your-256-bit-secret" with your actual secret key
-			return []byte("your_jwt_secret"), nil
+			return []byte(SECRET_KEY), nil
 		})
 
 		if err != nil {

@@ -21,8 +21,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	// Retrieve the MongoDB URI from the environment variable
 	mongoURI := os.Getenv("MONGODB_URI")
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)

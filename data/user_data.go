@@ -5,9 +5,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"task-manager/models"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -54,9 +56,15 @@ func (taskmgr *UserManager) RegisterUserDb(user models.User) (int, error) {
 }
 
 func (taskmgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	SECRET_KEY := os.Getenv("JWT_SECRET")
+
 	collection := taskmgr.client.Database("task-manager").Collection("users")
 
-	var jwtSecret = []byte("your_jwt_secret")
+	var jwtSecret = []byte(SECRET_KEY)
 
 	var existingUser models.User
 
