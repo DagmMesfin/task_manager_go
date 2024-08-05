@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net/http"
 	"task-manager/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -28,7 +29,7 @@ func (taskmgr *UserManager) RegisterUserDb(user models.User) (int, error) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return 500, err
+		return http.StatusInternalServerError, err
 	}
 
 	user.ID = primitive.NewObjectID()
@@ -38,10 +39,10 @@ func (taskmgr *UserManager) RegisterUserDb(user models.User) (int, error) {
 	_, erro := collection.InsertOne(context.TODO(), user)
 
 	if erro != nil {
-		return 400, erro
+		return http.StatusBadRequest, erro
 	}
 
-	return 200, nil
+	return http.StatusOK, nil
 
 }
 
@@ -58,20 +59,21 @@ func (taskmgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
 	log.Println(existingUser, user)
 	if bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password)) != nil {
 
-		return 401, errors.New("Invalid email or password"), ""
+		return http.StatusUnauthorized, errors.New("Invalid email or password"), ""
 	}
 
 	// Generate JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"_id":   existingUser.ID,
-		"email": existingUser.Email,
+		"_id":     existingUser.ID,
+		"email":   existingUser.Email,
+		"isadmin": existingUser.IsAdmin,
 	})
 
 	jwtToken, err := token.SignedString(jwtSecret)
 	if err != nil {
-		return 500, errors.New("Internal server error"), ""
+		return http.StatusInternalServerError, errors.New("Internal server error"), ""
 	}
 
-	return 200, nil, jwtToken
+	return http.StatusOK, nil, jwtToken
 
 }

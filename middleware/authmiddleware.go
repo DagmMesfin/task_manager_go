@@ -46,12 +46,25 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if !token.Valid {
+		if role, err := token.Claims.(jwt.MapClaims); err && token.Valid {
+			c.Set("isadmin", role["isadmin"])
+		} else {
 			c.JSON(401, gin.H{"error": "Invalid JWT"})
 			c.Abort()
 			return
 		}
+		c.Next()
+	}
+}
 
+func AdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		isAdmin, exists := c.Get("isadmin")
+		if !exists || !isAdmin.(bool) {
+			c.JSON(403, gin.H{"error": "Forbidden: You don't have admin privileges"})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }
