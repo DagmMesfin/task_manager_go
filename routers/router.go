@@ -14,12 +14,12 @@ func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController, usermgr 
 	{
 		auth.GET("/tasks", taskmgr.GetTasks)
 		auth.GET("/tasks/:id", taskmgr.GetTasksById)
+		auth.PUT("/tasks/:id", taskmgr.PutTask)
 
 		admin := auth.Group("/")
 		admin.Use(middleware.AdminMiddleware())
 		{
 			admin.POST("/tasks", taskmgr.PostTask)
-			admin.PUT("/tasks/:id", taskmgr.PutTask)
 			admin.DELETE("/tasks/:id", taskmgr.DeleteTask)
 		}
 	}
