@@ -30,6 +30,7 @@ func (controller *UserController) RegisterUser(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(req_status, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(200, gin.H{"message": "User registered successfully"})

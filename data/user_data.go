@@ -25,7 +25,14 @@ func NewUserManager(mongoClient *mongo.Client) *UserManager {
 }
 
 func (taskmgr *UserManager) RegisterUserDb(user models.User) (int, error) {
+
 	collection := taskmgr.client.Database("task-manager").Collection("users")
+
+	ere := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Err()
+
+	if ere == nil {
+		return http.StatusBadRequest, errors.New("user already exists with same email")
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
