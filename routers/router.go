@@ -9,6 +9,9 @@ import (
 
 func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController, usermgr *controllers.UserController) {
 
+	gino.POST("/register", usermgr.RegisterUser)
+	gino.POST("/login", usermgr.LoginUser)
+
 	auth := gino.Group("/")
 	auth.Use(middleware.AuthMiddleware())
 	{
@@ -23,7 +26,5 @@ func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController, usermgr 
 			admin.DELETE("/tasks/:id", taskmgr.DeleteTask)
 		}
 	}
-	gino.POST("/register", usermgr.RegisterUser)
-	gino.POST("/login", usermgr.LoginUser)
 
 }

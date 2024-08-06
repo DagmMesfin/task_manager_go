@@ -296,9 +296,6 @@ The `userId` property contains the unique identifier for the newly registered us
 
 ### 🔑 Authentication noauth
 
-|Param|value|Type|
-|---|---|---|
-
 
 
 ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃ ⁃
@@ -346,8 +343,6 @@ Upon a successful request, the server responds with a status code of 200 and a J
 
 ### 🔑 Authentication noauth
 
-|Param|value|Type|
-|---|---|---|
 
 
 
