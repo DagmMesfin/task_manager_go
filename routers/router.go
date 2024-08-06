@@ -24,6 +24,9 @@ func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController, usermgr 
 		{
 			admin.POST("/tasks", taskmgr.PostTask)
 			admin.DELETE("/tasks/:id", taskmgr.DeleteTask)
+
+			//delete user
+			admin.DELETE("/users/:id", usermgr.DeleteUser)
 		}
 	}
 

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net/http"
 	"task-manager/data"
 	"task-manager/models"
 
@@ -52,4 +53,15 @@ func (controller *UserController) LoginUser(c *gin.Context) {
 
 	c.JSON(200, gin.H{"message": "User logged in successfully",
 		"token": token})
+}
+
+func (controller *UserController) DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+
+	if code, erro := controller.service.DeleteUser(id); erro == nil {
+		c.IndentedJSON(code, gin.H{"message": "user deleted"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
 }

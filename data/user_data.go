@@ -26,9 +26,9 @@ func NewUserManager(mongoClient *mongo.Client) *UserManager {
 	}
 }
 
-func (taskmgr *UserManager) RegisterUserDb(user models.User) (int, error) {
+func (usermgr *UserManager) RegisterUserDb(user models.User) (int, error) {
 
-	collection := taskmgr.client.Database("task-manager").Collection("users")
+	collection := usermgr.client.Database("task-manager").Collection("users")
 
 	ere := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Err()
 
@@ -55,20 +55,19 @@ func (taskmgr *UserManager) RegisterUserDb(user models.User) (int, error) {
 
 }
 
-func (taskmgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
+func (usermgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 	SECRET_KEY := os.Getenv("JWT_SECRET")
 
-	collection := taskmgr.client.Database("task-manager").Collection("users")
+	collection := usermgr.client.Database("task-manager").Collection("users")
 
 	var jwtSecret = []byte(SECRET_KEY)
 
 	var existingUser models.User
 
-	// User login logic
 	collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 
 	log.Println(existingUser, user)
@@ -77,7 +76,6 @@ func (taskmgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
 		return http.StatusUnauthorized, errors.New("Invalid email or password"), ""
 	}
 
-	// Generate JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"_id":     existingUser.ID,
 		"email":   existingUser.Email,
@@ -90,5 +88,21 @@ func (taskmgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
 	}
 
 	return http.StatusOK, nil, jwtToken
+
+}
+
+func (usermgr *UserManager) DeleteUser(id string) (int, error) {
+	collection := usermgr.client.Database("task-manager").Collection("users")
+
+	ido, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": ido}
+
+	result, err := collection.DeleteOne(context.TODO(), filter)
+
+	if err != nil || result.DeletedCount == 0 {
+		return 404, errors.New("user not found")
+	}
+
+	return 200, nil
 
 }
