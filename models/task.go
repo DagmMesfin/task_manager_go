@@ -7,7 +7,8 @@ import (
 )
 
 type Task struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	ID          primitive.ObjectID `bson:"_id,omitempty"`
+	UserID      primitive.ObjectID `bson:"userid,omitempty"`
 	Title       string             `bson:"title,omitempty" json:"title,omitempty"`
 	Description string             `bson:"description,omitempty" json:"description,omitempty"`
 	DueDate     time.Time          `bson:"due_date,omitempty" json:"due_date,omitempty"`

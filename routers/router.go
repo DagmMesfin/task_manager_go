@@ -7,10 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController, usermgr *controllers.UserController) {
+func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController) {
 
-	gino.POST("/register", usermgr.RegisterUser)
-	gino.POST("/login", usermgr.LoginUser)
+	gino.POST("/register", taskmgr.RegisterUser)
+	gino.POST("/login", taskmgr.LoginUser)
 
 	auth := gino.Group("/")
 	auth.Use(middleware.AuthMiddleware())
@@ -18,15 +18,14 @@ func SetupRoutes(gino *gin.Engine, taskmgr *controllers.TaskController, usermgr 
 		auth.GET("/tasks", taskmgr.GetTasks)
 		auth.GET("/tasks/:id", taskmgr.GetTasksById)
 		auth.PUT("/tasks/:id", taskmgr.PutTask)
+		auth.POST("/tasks", taskmgr.PostTask)
+		auth.DELETE("/tasks/:id", taskmgr.DeleteTask)
 
 		admin := auth.Group("/")
 		admin.Use(middleware.AdminMiddleware())
 		{
-			admin.POST("/tasks", taskmgr.PostTask)
-			admin.DELETE("/tasks/:id", taskmgr.DeleteTask)
-
 			//delete user
-			admin.DELETE("/users/:id", usermgr.DeleteUser)
+			admin.DELETE("/users/:id", taskmgr.DeleteUser)
 		}
 	}
 

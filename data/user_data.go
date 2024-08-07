@@ -77,7 +77,7 @@ func (usermgr *UserManager) LoginUserDb(user models.User) (int, error, string) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"_id":     existingUser.ID,
+		"_id":     existingUser.ID.Hex(),
 		"email":   existingUser.Email,
 		"isadmin": existingUser.IsAdmin,
 	})

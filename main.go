@@ -42,14 +42,13 @@ func main() {
 	fmt.Println("Connected to MongoDB!")
 
 	tasks := data.NewTaskManager(client)
-	taskmgr := controllers.NewTaskController(*tasks)
-
 	userdata := data.NewUserManager(client)
-	usermgr := controllers.NewUserController(*userdata)
+
+	taskmgr := controllers.NewTaskController(*tasks, *userdata)
 
 	router := gin.Default()
 
-	routers.SetupRoutes(router, taskmgr, usermgr)
+	routers.SetupRoutes(router, taskmgr)
 
 	router.Run(":8080")
 }
