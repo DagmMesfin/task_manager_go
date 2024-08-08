@@ -1,65 +1,75 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
-	"task-manager/data"
-	"task-manager/models"
+	domain "task-manager/Domain"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskController struct {
-	service  data.TaskManager
-	userdata data.UserManager
+	taskusecase domain.TaskUsecase
+	userusecase domain.UserUsecase
 }
 
-func NewTaskController(taskmgr data.TaskManager, usermgr data.UserManager) *TaskController {
+// task-controller constructor
+func NewTaskController(taskmgr domain.TaskUsecase, usermgr domain.UserUsecase) *TaskController {
 	return &TaskController{
-		service:  taskmgr,
-		userdata: usermgr,
+		taskusecase: taskmgr,
+		userusecase: usermgr,
 	}
 
 }
 
+/*
+	================== The Task ======================
+*/
+
+// Get the tasks
 func (controller *TaskController) GetTasks(c *gin.Context) {
+
+	//get the required values from the context
 	role := c.GetBool("isadmin")
 	userid := c.GetString("userid")
 
 	ido, _ := primitive.ObjectIDFromHex(userid)
 
-	tasks, _ := controller.service.GetAllTasks(role, ido)
+	tasks, err := controller.taskusecase.GetAllTasks(c, role, ido)
 
-	log.Println(tasks)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"tasks": tasks})
 }
 
+// Get the task by the id
 func (controller *TaskController) GetTasksById(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Param("id") //get the path vairable "id"
 
+	//get the required values from the context
 	role := c.GetBool("isadmin")
 	userid := c.GetString("userid")
 
-	task, err := controller.service.GetTask(id, role, userid)
+	task, err := controller.taskusecase.GetTask(c, id, role, userid)
 
-	log.Println(task)
-
-	if err == nil {
-		c.IndentedJSON(http.StatusOK, task)
+	if err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
 		return
 	}
 
-	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	c.IndentedJSON(http.StatusOK, task)
+
 }
 
+// Creates the tasks
 func (controller *TaskController) PostTask(c *gin.Context) {
+	//get the required values from the context
 	userid := c.GetString("userid")
 
-	log.Println("userid ", userid)
-
-	var task models.Task
+	var task domain.Task
 
 	err := c.ShouldBindJSON(&task)
 
@@ -72,50 +82,50 @@ func (controller *TaskController) PostTask(c *gin.Context) {
 
 	task.UserID = userido
 
-	controller.service.AddTask(task)
+	controller.taskusecase.AddTask(c, task)
 
 	c.IndentedJSON(http.StatusCreated, gin.H{"message": "task created"})
 }
 
+// put the task
 func (controller *TaskController) PutTask(c *gin.Context) {
 	id := c.Param("id")
 
+	//get the required values from the context
 	role := c.GetBool("isadmin")
 	userid := c.GetString("userid")
 
-	var updatedTask models.Task
+	var updatedTask domain.Task
 
 	err := c.ShouldBindJSON(&updatedTask)
-
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	userido, _ := primitive.ObjectIDFromHex(userid)
-
 	updatedTask.UserID = userido
 
-	log.Println(updatedTask)
+	erro := controller.taskusecase.SetTask(c, id, updatedTask, role)
 
-	erro := controller.service.SetTask(id, updatedTask, role)
-
-	log.Println(erro)
-
-	if erro == nil {
-		c.IndentedJSON(http.StatusOK, gin.H{"message": "task updated"})
-	} else {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	if erro != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": erro.Error()})
+		return
 	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "task updated"})
 }
 
+// delete the task
 func (controller *TaskController) DeleteTask(c *gin.Context) {
 	id := c.Param("id")
 
+	//get the required values from the context
 	role := c.GetBool("isadmin")
 	userid := c.GetString("userid")
 
-	if erro := controller.service.DeleteTask(id, userid, role); erro == nil {
+	erro := controller.taskusecase.DeleteTask(c, id, userid, role)
+	if erro == nil {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "task deleted"})
 		return
 	}
@@ -123,16 +133,21 @@ func (controller *TaskController) DeleteTask(c *gin.Context) {
 	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 }
 
-func (controller *TaskController) RegisterUser(c *gin.Context) {
-	var user models.User
+/*
+	================== The User ======================
+*/
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+// register the user
+func (controller *TaskController) RegisterUser(c *gin.Context) {
+	var user domain.User
+
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	req_status, err := controller.userdata.RegisterUserDb(user)
-
+	req_status, err := controller.userusecase.RegisterUserDb(c, user)
 	if err != nil {
 		c.JSON(req_status, gin.H{"error": err.Error()})
 		return
@@ -141,15 +156,17 @@ func (controller *TaskController) RegisterUser(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "User registered successfully"})
 }
 
+// Login the user
 func (controller *TaskController) LoginUser(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var user domain.User
+
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	code, err, token := controller.userdata.LoginUserDb(user)
-
+	code, token, err := controller.userusecase.LoginUserDb(c, user)
 	if err != nil {
 		c.JSON(code, gin.H{"error": err.Error()})
 		return
@@ -159,10 +176,11 @@ func (controller *TaskController) LoginUser(c *gin.Context) {
 		"token": token})
 }
 
+// Delete the user (Admin-specific Operation)
 func (controller *TaskController) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
-	if code, erro := controller.userdata.DeleteUser(id); erro == nil {
+	if code, erro := controller.userusecase.DeleteUser(c, id); erro == nil {
 		c.IndentedJSON(code, gin.H{"message": "user deleted"})
 		return
 	}

@@ -1,31 +1,35 @@
-package data
+package repositories
 
 import (
 	"context"
 	"errors"
 	"log"
-	"task-manager/models"
+	domain "task-manager/Domain"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type TaskManager struct {
-	client *mongo.Client
+type TaskRepository struct {
+	client     *mongo.Client
+	database   *mongo.Database
+	collection *mongo.Collection
 }
 
-func NewTaskManager(mongoClient *mongo.Client) *TaskManager {
-	return &TaskManager{
-		client: mongoClient,
+func NewTaskRepository(mongoClient *mongo.Client) domain.TaskRepository {
+	return &TaskRepository{
+		client:     mongoClient,
+		database:   mongoClient.Database("task-manager"),
+		collection: mongoClient.Database("task-manager").Collection("tasks"),
 	}
 
 }
 
-func (taskmgr *TaskManager) GetAllTasks(isadmin bool, userid primitive.ObjectID) ([]models.Task, error) {
-	var tasks []models.Task
+func (taskrepo *TaskRepository) GetAllTasks(isadmin bool, userid primitive.ObjectID) ([]domain.Task, error) {
+	var tasks []domain.Task
 
-	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	collection := taskrepo.collection
 	filter := bson.M{}
 	if !isadmin {
 		filter = bson.M{"userid": userid}
@@ -44,15 +48,14 @@ func (taskmgr *TaskManager) GetAllTasks(isadmin bool, userid primitive.ObjectID)
 	return tasks, nil
 }
 
-func (taskmgr *TaskManager) GetTask(id string, isadmin bool, userid string) (models.Task, error) {
+func (taskrepo *TaskRepository) GetTask(id string, isadmin bool, userid string) (domain.Task, error) {
 
-	var task models.Task
-	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+	var task domain.Task
+	collection := taskrepo.collection
 	ido, _ := primitive.ObjectIDFromHex(id)
 	userido, _ := primitive.ObjectIDFromHex(userid)
 
 	filter := bson.M{"_id": ido}
-
 	if !isadmin {
 		filter = bson.M{"_id": ido, "userid": userido}
 	}
@@ -62,8 +65,8 @@ func (taskmgr *TaskManager) GetTask(id string, isadmin bool, userid string) (mod
 
 }
 
-func (taskmgr *TaskManager) AddTask(task models.Task) error {
-	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+func (taskrepo *TaskRepository) AddTask(task domain.Task) error {
+	collection := taskrepo.collection
 	task.ID = primitive.NewObjectID()
 	_, err := collection.InsertOne(context.TODO(), task)
 
@@ -75,8 +78,8 @@ func (taskmgr *TaskManager) AddTask(task models.Task) error {
 
 }
 
-func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task, isadmin bool) error {
-	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+func (taskrepo *TaskRepository) SetTask(id string, updatedTask domain.Task, isadmin bool) error {
+	collection := taskrepo.collection
 	ido, _ := primitive.ObjectIDFromHex(id)
 
 	filter := bson.M{"_id": ido}
@@ -104,8 +107,8 @@ func (taskmgr *TaskManager) SetTask(id string, updatedTask models.Task, isadmin 
 	return nil
 }
 
-func (taskmgr *TaskManager) DeleteTask(id string, userid string, isadmin bool) error {
-	collection := taskmgr.client.Database("task-manager").Collection("tasks")
+func (taskrepo *TaskRepository) DeleteTask(id string, userid string, isadmin bool) error {
+	collection := taskrepo.collection
 	ido, _ := primitive.ObjectIDFromHex(id)
 	userido, _ := primitive.ObjectIDFromHex(userid)
 	filter := bson.M{"_id": ido}
