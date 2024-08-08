@@ -36,7 +36,7 @@ type TaskUsecase interface {
 }
 
 /*
-=========== The Models and Interfaces for Task =============
+=========== The Models and Interfaces for User =============
 */
 type User struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
