@@ -11,6 +11,8 @@ import (
 // The middleware for Authentication
 func AuthMiddleware(c *gin.Context) {
 
+	pass_service := NewPasswordService()
+
 	authHeader := c.GetHeader("Authorization") // extracting the authentication value from the header
 	if authHeader == "" {
 		c.JSON(401, gin.H{"error": "Authorization header is required"})
@@ -25,8 +27,8 @@ func AuthMiddleware(c *gin.Context) {
 		return
 	}
 
-	tokenString := authParts[1]             //the token string
-	token, err := TokenClaimer(tokenString) //verifying the token
+	tokenString := authParts[1]                          //the token string
+	token, err := pass_service.TokenClaimer(tokenString) //verifying the token
 
 	if err != nil {
 		log.Println("Token parsing error:", err.Error())

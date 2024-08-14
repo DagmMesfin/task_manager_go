@@ -2,32 +2,32 @@ package infrastructure
 
 import (
 	"context"
-	"fmt"
 	"log"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	domain "task-manager/Domain"
+	"task-manager/database"
+	"time"
 )
 
 // initializing the working structure of mongo-db
-func MongoDBInit() *mongo.Client {
+func MongoDBInit(mongoURI string) domain.Client {
 
-	mongoURI := DotEnvLoader("MONGODB_URI") //extracts the secret URI from the .env
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	clientOptions := options.Client().ApplyURI(mongoURI).SetServerAPIOptions(serverAPI)
-
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	client, err := database.NewClient(mongoURI)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = client.Ping(context.TODO(), nil)
+	err = client.Connect(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Connected to MongoDB!")
+	err = client.Ping(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return client
 }

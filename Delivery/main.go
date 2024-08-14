@@ -12,12 +12,13 @@ import (
 )
 
 func main() {
-
-	client := infrastructure.MongoDBInit() //mongodb initialization
-
+	mongoURI := infrastructure.DotEnvLoader("MONGODB_URI") //extracts the secret URI from the .env
+	client := infrastructure.MongoDBInit(mongoURI)         //mongodb initialization
+	db := client.Database("task-manager")
 	//initialization of the repositories
-	task_repo := repositories.NewTaskRepository(client)
-	user_repo := repositories.NewUserRepository(client)
+	pass_service := infrastructure.NewPasswordService()
+	task_repo := repositories.NewTaskRepository(db)
+	user_repo := repositories.NewUserRepository(db, pass_service)
 
 	//set-up the controllers
 	cont := controllers.NewTaskController(usecase.NewTaskUsecase(task_repo, 3*time.Minute), usecase.NewUserUsecase(user_repo, 3*time.Minute))

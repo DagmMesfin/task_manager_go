@@ -2,44 +2,42 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"log"
-	"net/http"
 	domain "task-manager/Domain"
-	infrastructure "task-manager/Infrastructure"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserRepository struct {
-	client     *mongo.Client
-	database   *mongo.Database
-	collection *mongo.Collection
+	database     domain.Database
+	collection   domain.Collection
+	pass_service domain.PasswordService
 }
 
-func NewUserRepository(mongoClient *mongo.Client) domain.UserRepository {
+func NewUserRepository(mongoDatabase domain.Database, password_service domain.PasswordService) domain.UserRepository {
 	return &UserRepository{
-		client:     mongoClient,
-		database:   mongoClient.Database("task-manager"),
-		collection: mongoClient.Database("task-manager").Collection("tasks"),
+		database:     mongoDatabase,
+		collection:   mongoDatabase.Collection("users"),
+		pass_service: password_service,
 	}
 }
 
-func (userepo *UserRepository) RegisterUserDb(user domain.User) (int, error) {
+func (userepo *UserRepository) RegisterUserDb(user domain.User) *domain.AppError {
 
 	collection := userepo.collection
 
-	ere := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Err()
+	var usero domain.User
 
-	if ere == nil {
-		return http.StatusBadRequest, errors.New("user already exists with same email")
+	collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&usero)
+
+	if usero.Email == user.Email {
+		return domain.ErrUserExists
 	}
 
-	hashedPassword, err := infrastructure.PasswordHasher(user.Password)
+	hashedPassword, err := userepo.pass_service.PasswordHasher(user.Password)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return domain.ErrUserRegistrationFailed
 	}
 
 	user.Password = hashedPassword
@@ -49,38 +47,38 @@ func (userepo *UserRepository) RegisterUserDb(user domain.User) (int, error) {
 	_, erro := collection.InsertOne(context.TODO(), user)
 
 	if erro != nil {
-		return http.StatusBadRequest, erro
+		return domain.ErrUserRegistrationFailed
 	}
 
-	return http.StatusOK, nil
+	return nil
 
 }
 
-func (userepo *UserRepository) LoginUserDb(user domain.User) (int, string, error) {
+func (userepo *UserRepository) LoginUserDb(user domain.User) (string, interface{}, *domain.AppError) {
 
 	collection := userepo.collection
 
 	var existingUser domain.User
 
-	collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	result := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 
 	log.Println(existingUser, user)
 
-	if infrastructure.PasswordComparator(existingUser.Password, user.Password) {
-		return http.StatusUnauthorized, "", errors.New("invalid email or password")
+	if userepo.pass_service.PasswordComparator(existingUser.Password, user.Password) {
+		return "", result, domain.ErrUnauthorizedAccess
 	}
 
-	jwtToken, err := infrastructure.TokenGenerator(existingUser.ID, existingUser.Email, existingUser.IsAdmin)
+	jwtToken, err := userepo.pass_service.TokenGenerator(existingUser.ID, existingUser.Email, existingUser.IsAdmin)
 
 	if err != nil {
-		return http.StatusInternalServerError, "", errors.New("internal server error")
+		return "", result, domain.ErrInternalServerError
 	}
 
-	return http.StatusOK, jwtToken, nil
+	return jwtToken, existingUser, nil
 
 }
 
-func (userepo *UserRepository) DeleteUser(id string) (int, error) {
+func (userepo *UserRepository) DeleteUser(id string) *domain.AppError {
 	collection := userepo.collection
 
 	ido, _ := primitive.ObjectIDFromHex(id)
@@ -88,10 +86,10 @@ func (userepo *UserRepository) DeleteUser(id string) (int, error) {
 
 	result, err := collection.DeleteOne(context.TODO(), filter)
 
-	if err != nil || result.DeletedCount == 0 {
-		return 404, errors.New("user not found")
+	if err != nil || result == 0 {
+		return domain.ErrUserNotFound
 	}
 
-	return 200, nil
+	return nil
 
 }

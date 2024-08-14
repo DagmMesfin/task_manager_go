@@ -11,7 +11,7 @@ import (
 )
 
 // a tokenizer for authentication purpose
-func TokenGenerator(id primitive.ObjectID, email string, isadmin bool) (string, error) {
+func (ps *PasswordService) TokenGenerator(id primitive.ObjectID, email string, isadmin bool) (string, error) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -30,7 +30,7 @@ func TokenGenerator(id primitive.ObjectID, email string, isadmin bool) (string, 
 }
 
 // a token claimer for extracting the necessary datas
-func TokenClaimer(tokenstr string) (*jwt.Token, error) {
+func (ps *PasswordService) TokenClaimer(tokenstr string) (*jwt.Token, error) {
 
 	SECRET_KEY := DotEnvLoader("JWT_SECRET")
 

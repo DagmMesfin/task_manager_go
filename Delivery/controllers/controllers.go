@@ -38,7 +38,7 @@ func (controller *TaskController) GetTasks(c *gin.Context) {
 	tasks, err := controller.taskusecase.GetAllTasks(c, role, ido)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(err.Status(), gin.H{"error": err.Message()})
 		return
 	}
 
@@ -56,7 +56,7 @@ func (controller *TaskController) GetTasksById(c *gin.Context) {
 	task, err := controller.taskusecase.GetTask(c, id, role, userid)
 
 	if err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "task not found"})
+		c.IndentedJSON(err.Status(), gin.H{"error": err.Message()})
 		return
 	}
 
@@ -82,7 +82,12 @@ func (controller *TaskController) PostTask(c *gin.Context) {
 
 	task.UserID = userido
 
-	controller.taskusecase.AddTask(c, task)
+	erro := controller.taskusecase.AddTask(c, task)
+
+	if erro != nil {
+		c.IndentedJSON(erro.Status(), gin.H{"error": erro.Message()})
+		return
+	}
 
 	c.IndentedJSON(http.StatusCreated, gin.H{"message": "task created"})
 }
@@ -109,7 +114,7 @@ func (controller *TaskController) PutTask(c *gin.Context) {
 	erro := controller.taskusecase.SetTask(c, id, updatedTask, role)
 
 	if erro != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": erro.Error()})
+		c.IndentedJSON(erro.Status(), gin.H{"error": erro.Message()})
 		return
 	}
 
@@ -130,7 +135,7 @@ func (controller *TaskController) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+	c.IndentedJSON(erro.Status(), gin.H{"error": erro.Message()})
 }
 
 /*
@@ -147,13 +152,13 @@ func (controller *TaskController) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	req_status, err := controller.userusecase.RegisterUserDb(c, user)
-	if err != nil {
-		c.JSON(req_status, gin.H{"error": err.Error()})
+	erro := controller.userusecase.RegisterUserDb(c, user)
+	if erro != nil {
+		c.JSON(erro.Status(), gin.H{"error": erro.Message()})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "User registered successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
 }
 
 // Login the user
@@ -166,24 +171,26 @@ func (controller *TaskController) LoginUser(c *gin.Context) {
 		return
 	}
 
-	code, token, err := controller.userusecase.LoginUserDb(c, user)
-	if err != nil {
-		c.JSON(code, gin.H{"error": err.Error()})
+	token, result, erro := controller.userusecase.LoginUserDb(c, user)
+
+	if erro != nil {
+		c.JSON(erro.Status(), gin.H{"error": erro.Message()})
 		return
 	}
 
 	c.JSON(200, gin.H{"message": "User logged in successfully",
-		"token": token})
+		"token": token, "user": result})
 }
 
 // Delete the user (Admin-specific Operation)
 func (controller *TaskController) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
-	if code, erro := controller.userusecase.DeleteUser(c, id); erro == nil {
-		c.IndentedJSON(code, gin.H{"message": "user deleted"})
+	if erro := controller.userusecase.DeleteUser(c, id); erro != nil {
+		c.IndentedJSON(erro.Status(), gin.H{"error": erro.Message()})
 		return
 	}
 
-	c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "user deleted"})
+
 }

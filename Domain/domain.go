@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -20,19 +21,19 @@ type Task struct {
 }
 
 type TaskRepository interface {
-	GetAllTasks(isadmin bool, userid primitive.ObjectID) ([]Task, error)
-	GetTask(id string, isadmin bool, userid string) (Task, error)
-	AddTask(task Task) error
-	SetTask(id string, updatedTask Task, isadmin bool) error
-	DeleteTask(id string, userid string, isadmin bool) error
+	GetAllTasks(isadmin bool, userid primitive.ObjectID) ([]Task, *AppError)
+	GetTask(id string, isadmin bool, userid string) (Task, *AppError)
+	AddTask(task Task) *AppError
+	SetTask(id string, updatedTask Task, isadmin bool) *AppError
+	DeleteTask(id string, userid string, isadmin bool) *AppError
 }
 
 type TaskUsecase interface {
-	GetAllTasks(c context.Context, isadmin bool, userid primitive.ObjectID) ([]Task, error)
-	GetTask(c context.Context, id string, isadmin bool, userid string) (Task, error)
-	AddTask(c context.Context, task Task) error
-	SetTask(c context.Context, id string, updatedTask Task, isadmin bool) error
-	DeleteTask(c context.Context, id string, userid string, isadmin bool) error
+	GetAllTasks(c context.Context, isadmin bool, userid primitive.ObjectID) ([]Task, *AppError)
+	GetTask(c context.Context, id string, isadmin bool, userid string) (Task, *AppError)
+	AddTask(c context.Context, task Task) *AppError
+	SetTask(c context.Context, id string, updatedTask Task, isadmin bool) *AppError
+	DeleteTask(c context.Context, id string, userid string, isadmin bool) *AppError
 }
 
 /*
@@ -46,13 +47,26 @@ type User struct {
 }
 
 type UserRepository interface {
-	RegisterUserDb(user User) (int, error)
-	LoginUserDb(user User) (int, string, error)
-	DeleteUser(id string) (int, error)
+	RegisterUserDb(user User) *AppError
+	LoginUserDb(user User) (string, interface{}, *AppError)
+	DeleteUser(id string) *AppError
 }
 
 type UserUsecase interface {
-	RegisterUserDb(c context.Context, user User) (int, error)
-	LoginUserDb(c context.Context, user User) (int, string, error)
-	DeleteUser(c context.Context, id string) (int, error)
+	RegisterUserDb(c context.Context, user User) *AppError
+	LoginUserDb(c context.Context, user User) (string, interface{}, *AppError)
+	DeleteUser(c context.Context, id string) *AppError
+}
+
+type Response struct {
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+type PasswordService interface {
+	PasswordComparator(hash string, password string) bool
+	PasswordHasher(password string) (string, error)
+	TokenGenerator(id primitive.ObjectID, email string, isadmin bool) (string, error)
+	TokenClaimer(tokenstr string) (*jwt.Token, error)
 }

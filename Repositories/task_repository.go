@@ -2,31 +2,27 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"log"
 	domain "task-manager/Domain"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type TaskRepository struct {
-	client     *mongo.Client
-	database   *mongo.Database
-	collection *mongo.Collection
+	database   domain.Database
+	collection domain.Collection
 }
 
-func NewTaskRepository(mongoClient *mongo.Client) domain.TaskRepository {
+func NewTaskRepository(mongoDatabase domain.Database) domain.TaskRepository {
 	return &TaskRepository{
-		client:     mongoClient,
-		database:   mongoClient.Database("task-manager"),
-		collection: mongoClient.Database("task-manager").Collection("tasks"),
+		database:   mongoDatabase,
+		collection: mongoDatabase.Collection("tasks"),
 	}
 
 }
 
-func (taskrepo *TaskRepository) GetAllTasks(isadmin bool, userid primitive.ObjectID) ([]domain.Task, error) {
+func (taskrepo *TaskRepository) GetAllTasks(isadmin bool, userid primitive.ObjectID) ([]domain.Task, *domain.AppError) {
 	var tasks []domain.Task
 
 	collection := taskrepo.collection
@@ -37,18 +33,18 @@ func (taskrepo *TaskRepository) GetAllTasks(isadmin bool, userid primitive.Objec
 
 	cursor, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		return nil, err
+		return nil, domain.ErrInternalServerError
 	}
 	if err = cursor.All(context.TODO(), &tasks); err != nil {
 		if len(tasks) == 0 {
-			return tasks, errors.New("no tasks found")
+			return tasks, domain.ErrNoTasksFound
 		}
-		return nil, err
+		return nil, domain.ErrInternalServerError
 	}
 	return tasks, nil
 }
 
-func (taskrepo *TaskRepository) GetTask(id string, isadmin bool, userid string) (domain.Task, error) {
+func (taskrepo *TaskRepository) GetTask(id string, isadmin bool, userid string) (domain.Task, *domain.AppError) {
 
 	var task domain.Task
 	collection := taskrepo.collection
@@ -61,24 +57,29 @@ func (taskrepo *TaskRepository) GetTask(id string, isadmin bool, userid string) 
 	}
 
 	err := collection.FindOne(context.TODO(), filter).Decode(&task)
-	return task, err
+
+	if err != nil {
+		return *new(domain.Task), domain.ErrTaskNotFound
+	}
+
+	return task, nil
 
 }
 
-func (taskrepo *TaskRepository) AddTask(task domain.Task) error {
+func (taskrepo *TaskRepository) AddTask(task domain.Task) *domain.AppError {
 	collection := taskrepo.collection
 	task.ID = primitive.NewObjectID()
 	_, err := collection.InsertOne(context.TODO(), task)
 
 	if err != nil {
-		return err
+		return domain.ErrTaskInsertionFailed
 	}
 
 	return nil
 
 }
 
-func (taskrepo *TaskRepository) SetTask(id string, updatedTask domain.Task, isadmin bool) error {
+func (taskrepo *TaskRepository) SetTask(id string, updatedTask domain.Task, isadmin bool) *domain.AppError {
 	collection := taskrepo.collection
 	ido, _ := primitive.ObjectIDFromHex(id)
 
@@ -101,13 +102,13 @@ func (taskrepo *TaskRepository) SetTask(id string, updatedTask domain.Task, isad
 	log.Println(result, err, updatedTask)
 
 	if err != nil || result.MatchedCount == 0 {
-		return errors.New("task not found or you don't have the privilege to edit it")
+		return domain.ErrTaskUpdateFailed
 	}
 
 	return nil
 }
 
-func (taskrepo *TaskRepository) DeleteTask(id string, userid string, isadmin bool) error {
+func (taskrepo *TaskRepository) DeleteTask(id string, userid string, isadmin bool) *domain.AppError {
 	collection := taskrepo.collection
 	ido, _ := primitive.ObjectIDFromHex(id)
 	userido, _ := primitive.ObjectIDFromHex(userid)
@@ -119,9 +120,12 @@ func (taskrepo *TaskRepository) DeleteTask(id string, userid string, isadmin boo
 
 	result, err := collection.DeleteOne(context.TODO(), filter)
 
-	if err != nil || result.DeletedCount == 0 {
-		return errors.New("task not found")
+	if err != nil {
+		return domain.ErrInternalServerError
 	}
 
+	if result == 0 {
+		return domain.ErrTaskDeletionFailed
+	}
 	return nil
 }
